@@ -1,0 +1,74 @@
+import java.util.Timer;
+import java.util.TimerTask;
+
+// Interface for market data provider
+interface MarketDataService {
+    double getCurrentPrice(String symbol) throws Exception;
+}
+
+// Interface for order execution
+interface OrderManager {
+    void placeBuyOrder(String symbol, double quantity) throws Exception;
+    void placeSellOrder(String symbol, double quantity) throws Exception;
+    void closePosition(String symbol) throws Exception;
+}
+
+// Simple AI Signal Generator (stub, replace with AI/ML logic)
+class SignalGenerator {
+    // Return "BUY", "SELL", or "HOLD"
+    public String generateSignal(String symbol, double currentPrice) {
+        // Implement AI or technical indicator logic here
+        if (currentPrice % 2 < 1) { // Dummy logic
+            return "BUY";
+        } else {
+            return "SELL";
+        }
+    }
+}
+
+// Trade bot main class
+public class TradeBot {
+    private final MarketDataService marketDataService;
+    private final OrderManager orderManager;
+    private final SignalGenerator signalGenerator;
+    private final String symbol;
+    private final double tradeQuantity;
+
+    private boolean positionOpen = false;
+
+    public TradeBot(MarketDataService marketDataService, OrderManager orderManager,
+                    SignalGenerator signalGenerator, String symbol, double tradeQuantity) {
+        this.marketDataService = marketDataService;
+        this.orderManager = orderManager;
+        this.signalGenerator = signalGenerator;
+        this.symbol = symbol;
+        this.tradeQuantity = tradeQuantity;
+    }
+
+    public void start() {
+        Timer timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    double currentPrice = marketDataService.getCurrentPrice(symbol);
+                    String signal = signalGenerator.generateSignal(symbol, currentPrice);
+
+                    if ("BUY".equals(signal) && !positionOpen) {
+                        orderManager.placeBuyOrder(symbol, tradeQuantity);
+                        positionOpen = true;
+                        System.out.println("Placed BUY order at price " + currentPrice);
+                    } else if ("SELL".equals(signal) && positionOpen) {
+                        orderManager.closePosition(symbol);
+                        positionOpen = false;
+                        System.out.println("Closed position at price " + currentPrice);
+                    } else {
+                        System.out.println("Holding position. Signal: " + signal);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, 0, 5000); // Check every 5 seconds
+    }
+}
